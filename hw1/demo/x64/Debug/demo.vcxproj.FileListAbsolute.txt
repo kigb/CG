@@ -1,1 +1,2 @@
 D:\CG\CG_fangy\demo\demo\x64\Debug\demo.vcxproj.CopyComplete
+E:\AGrade3\CG\CG\hw1\demo\x64\Debug\demo.vcxproj.CopyComplete

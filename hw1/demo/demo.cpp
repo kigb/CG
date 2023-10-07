@@ -227,7 +227,9 @@ const char* fragmentShaderSource = R"(
 bool isTransitioning = false;
 
 bool showEdges = false;
-
+unsigned int edgeCBO;
+float globalTime = 0.0f;
+std::vector<float> edge_colors;
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_C && action == GLFW_PRESS) {
         isTransitioning = true;
@@ -248,6 +250,22 @@ std::vector<float> generateCircleColors(int num_circles, int num_segments) {
     }
     return circle_colors;
 }
+std::vector<float> goldColor = { 1.0f, 0.8431f, 0.0f }; // RGB for gold
+std::vector<float> whiteColor = { 1.0f, 1.0f, 1.0f }; // RGB for white
+
+void updateEdgeColors() {
+    for (size_t i = 0; i < edge_colors.size(); i += 3) {
+        float intensity = (std::sin(globalTime + float(i) * 0.1f) + 1.0f) * 0.5f;
+
+        edge_colors[i] = goldColor[0] * (1.0f - intensity) + whiteColor[0] * intensity; // R
+        edge_colors[i + 1] = goldColor[1] * (1.0f - intensity) + whiteColor[1] * intensity; // G
+        edge_colors[i + 2] = goldColor[2] * (1.0f - intensity) + whiteColor[2] * intensity; // B
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, edgeCBO);
+    glBufferData(GL_ARRAY_BUFFER, edge_colors.size() * sizeof(float), &edge_colors[0], GL_STATIC_DRAW);
+}
+
 
 
 std::vector<float> generateCircleVertices(float cx, float cy, float cz, float r, int num_segments) {
@@ -283,16 +301,16 @@ unsigned int edgeVBO, edgeVAO;
 
 
 int main() {
-    float initialRadii[9] = { 0.05f, 0.045f, 0.05f, 0.04f, 0.045f, 0.05f, 0.042f, 0.046f, 0.05f };  // ÎªÃ¿¸öµãÉèÖÃ³õÊ¼°ë¾¶
+    float initialRadii[9] = { 0.05f, 0.045f, 0.05f, 0.04f, 0.045f, 0.05f, 0.042f, 0.046f, 0.05f };  // ä¸ºæ¯ä¸ªç‚¹è®¾ç½®åˆå§‹åŠå¾„
     float radii[9];
     for (int i = 0; i < 9; i++) {
-        radii[i] = initialRadii[i];  // ³õÊ¼»¯°ë¾¶Êı×é
+        radii[i] = initialRadii[i];  // åˆå§‹åŒ–åŠå¾„æ•°ç»„
     }
     float time = 0;
 
 
 
-    std::vector<float> edge_colors;
+    
     for (size_t i = 0; i < edges.size() / 3; ++i) {
         edge_colors.push_back(1.0f); // R
         edge_colors.push_back(1.0f); // G
@@ -369,7 +387,7 @@ int main() {
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(1);
 
-    unsigned int edgeCBO;
+    
     glGenBuffers(1, &edgeCBO);
 
     // Load edge colors
@@ -438,29 +456,31 @@ int main() {
 
 
 
-    float blueThreshold = 0.95f; // ÀıÈç£¬µ±À¶É«·ÖÁ¿´ïµ½0.95Ê±Í£Ö¹½¥±ä
+    float blueThreshold = 0.95f; // ä¾‹å¦‚ï¼Œå½“è“è‰²åˆ†é‡è¾¾åˆ°0.95æ—¶åœæ­¢æ¸å˜
 
     float lineWidth = 1.0f;
     float pointSize = 1.0f;
     bool increasing = true;
+    
 
     while (!glfwWindowShouldClose(window)) {
-        glClearColor(0.8f, 0.8f, 0.8f, 1.0f);  // ÉèÖÃ±³¾°ÑÕÉ«Îªµ­»ÒÉ«
+        globalTime += 0.01f;
+        glClearColor(0.8f, 0.8f, 0.8f, 1.0f);  // è®¾ç½®èƒŒæ™¯é¢œè‰²ä¸ºæ·¡ç°è‰²
         glClear(GL_COLOR_BUFFER_BIT);
         if (isTransitioning) {
             bool allBlueEnough = true;
 
             for (size_t i = 0; i < colors.size(); i += 3) {
-                colors[i] *= 0.9999f; // ¼õÉÙºìÉ«
-                colors[i + 1] *= 0.9999f; // ¼õÉÙÂÌÉ«
-                colors[i + 2] = std::min(colors[i + 2] + 0.0002f, 1.0f); // Ôö¼ÓÀ¶É«
+                colors[i] *= 0.9999f; // å‡å°‘çº¢è‰²
+                colors[i + 1] *= 0.9999f; // å‡å°‘ç»¿è‰²
+                colors[i + 2] = std::min(colors[i + 2] + 0.0002f, 1.0f); // å¢åŠ è“è‰²
 
                 if (colors[i + 2] < blueThreshold) {
                     allBlueEnough = false;
                 }
             }
 
-            // ÖØĞÂ°ó¶¨ÑÕÉ«Êı¾İ
+            // é‡æ–°ç»‘å®šé¢œè‰²æ•°æ®
             glBindBuffer(GL_ARRAY_BUFFER, CBO);
             glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(float), &colors[0], GL_STATIC_DRAW);
 
@@ -477,24 +497,25 @@ int main() {
         glDrawArrays(GL_TRIANGLES, 0, triangles.size() / 3);
 
         if (showEdges) {
-            time += 0.002f;  // ¸üĞÂÊ±¼ä£¬Äú¿ÉÄÜĞèÒªµ÷ÕûÕâ¸öÔöÁ¿
+            updateEdgeColors();
+            time += 0.02f;  // æ›´æ–°æ—¶é—´
             for (int i = 0; i < 9; i++) {
-                radii[i] = initialRadii[i] * std::max(0.0f, std::sin(time - i * 0.3f));  // Ê¹ÓÃÕıÏÒº¯Êı¸üĞÂ°ë¾¶£¬Äú¿ÉÒÔ°´Ğè¸ü¸Ä´Ëº¯Êı
-                // È·±£°ë¾¶²»Îª¸º
+                radii[i] = initialRadii[i] * std::max(0.0f, std::sin(time - i * 0.3f));  // ä½¿ç”¨æ­£å¼¦å‡½æ•°æ›´æ–°åŠå¾„ï¼Œæ‚¨å¯ä»¥æŒ‰éœ€æ›´æ”¹æ­¤å‡½æ•°
+                // ç¡®ä¿åŠå¾„ä¸ä¸ºè´Ÿ
             }
 
-            // ¸ù¾İĞÂµÄ°ë¾¶¸üĞÂÔ²ĞÎ¶¥µã
-            circleVertices.clear();  // Çå³ı¾ÉµÄ¶¥µã
+            // æ ¹æ®æ–°çš„åŠå¾„æ›´æ–°åœ†å½¢é¡¶ç‚¹
+            circleVertices.clear();  // æ¸…é™¤æ—§çš„é¡¶ç‚¹
             for (size_t i = 0; i < points.size(); i += 3) {
                 float cx = points[i];
                 float cy = points[i + 1];
                 float cz = points[i + 2];
                 std::vector<float> newCircleVertices = generateCircleVertices(cx, cy, cz, radii[i / 3], num_segments);
-                circleVertices.insert(circleVertices.end(), newCircleVertices.begin(), newCircleVertices.end());  // Ìí¼ÓĞÂµÄ¶¥µã
+                circleVertices.insert(circleVertices.end(), newCircleVertices.begin(), newCircleVertices.end());  // æ·»åŠ æ–°çš„é¡¶ç‚¹
             }
 
 
-            // ÖØĞÂ°ó¶¨¸üĞÂºóµÄcircleVertices
+            // é‡æ–°ç»‘å®šæ›´æ–°åçš„circleVertices
             glBindBuffer(GL_ARRAY_BUFFER, circleVBO);
             glBufferData(GL_ARRAY_BUFFER, circleVertices.size() * sizeof(float), &circleVertices[0], GL_STATIC_DRAW);
             glBindVertexArray(edgeVAO);
