@@ -143,55 +143,24 @@ std::vector<float> colors = {
 };
 
 std::vector<float> edges = {
-    // Edges for Triangle 1
     tr_points[0], tr_points[1], tr_points[2], points[0], points[1], points[2],
-    points[0], points[1], points[2], points[15], points[16], points[17],
     tr_points[0], tr_points[1], tr_points[2], points[15], points[16], points[17],
-
-    // Edges for Triangle 2
-    points[0], points[1], points[2], tr_points[0], tr_points[1], tr_points[2],
     tr_points[0], tr_points[1], tr_points[2], tr_points[3], tr_points[4], tr_points[5],
-    points[0], points[1], points[2], tr_points[3], tr_points[4], tr_points[5],
-
-    // Edges for Triangle 3
-    points[0], points[1], points[2], tr_points[3], tr_points[4], tr_points[5],
     tr_points[3], tr_points[4], tr_points[5], points[3], points[4], points[5],
+    tr_points[3], tr_points[4], tr_points[5], points[6], points[7], points[8],
     points[0], points[1], points[2], points[3], points[4], points[5],
-
-    // Edges for Triangle 4
-    points[12], points[13], points[14], points[15], points[16], points[17],
-    points[15], points[16], points[17], tr_points[0], tr_points[1], tr_points[2],
-    points[12], points[13], points[14], tr_points[0], tr_points[1], tr_points[2],
-
-    // Edges for Triangle 5
-    tr_points[0], tr_points[1], tr_points[2], tr_points[3], tr_points[4], tr_points[5],
-    tr_points[3], tr_points[4], tr_points[5], tr_points[6], tr_points[7], tr_points[8],
-    tr_points[0], tr_points[1], tr_points[2], tr_points[6], tr_points[7], tr_points[8],
-
-    // Edges for Triangle 6
-    tr_points[3], tr_points[4], tr_points[5], tr_points[6], tr_points[7], tr_points[8],
-    tr_points[6], tr_points[7], tr_points[8], points[6], points[7], points[8],
-    tr_points[3], tr_points[4], tr_points[5], points[6], points[7], points[8],
-
-    // Edges for Triangle 7
-    tr_points[3], tr_points[4], tr_points[5], points[3], points[4], points[5],
     points[3], points[4], points[5], points[6], points[7], points[8],
-    tr_points[3], tr_points[4], tr_points[5], points[6], points[7], points[8],
-
-    // Edges for Triangle 8
-    points[9], points[10], points[11], points[12], points[13], points[14],
+    points[9], points[10], points[11], points[6], points[7], points[8],
+    points[9], points[10], points[11], tr_points[0], tr_points[1], tr_points[2],
+    points[9], points[10], points[11], tr_points[6], tr_points[7], tr_points[8],
+    points[12], points[13], points[14], points[15], points[16], points[17],
     points[12], points[13], points[14], tr_points[0], tr_points[1], tr_points[2],
-    points[9], points[10], points[11], tr_points[0], tr_points[1], tr_points[2],
-
-    // Edges for Triangle 9
-    points[9], points[10], points[11], tr_points[0], tr_points[1], tr_points[2],
-    tr_points[0], tr_points[1], tr_points[2], tr_points[6], tr_points[7], tr_points[8],
-    points[9], points[10], points[11], tr_points[6], tr_points[7], tr_points[8],
-
-    // Edges for Triangle 10
-    points[9], points[10], points[11], tr_points[6], tr_points[7], tr_points[8],
+    tr_points[3], tr_points[4], tr_points[5], tr_points[6], tr_points[7], tr_points[8],
     tr_points[6], tr_points[7], tr_points[8], points[6], points[7], points[8],
-    points[9], points[10], points[11], points[6], points[7], points[8]
+    tr_points[0], tr_points[1], tr_points[2], tr_points[6], tr_points[7], tr_points[8],
+    points[0], points[1], points[2],points[15], points[16], points[17],
+    points[12], points[13], points[14],points[9], points[10], points[11],
+    points[0], points[1], points[2],tr_points[3], tr_points[4], tr_points[5],
 };
 
 
@@ -230,12 +199,16 @@ bool showEdges = false;
 unsigned int edgeCBO;
 float globalTime = 0.0f;
 std::vector<float> edge_colors;
+bool updateEdgeColor = false;
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_C && action == GLFW_PRESS) {
         isTransitioning = true;
     }
     if (key == GLFW_KEY_S && action == GLFW_PRESS) {
         showEdges = !showEdges; // Toggle between showing and not showing edges
+    }
+    if (key == GLFW_KEY_V && action == GLFW_PRESS) {
+        updateEdgeColor = !updateEdgeColor;
     }
 }
 
@@ -252,16 +225,37 @@ std::vector<float> generateCircleColors(int num_circles, int num_segments) {
 }
 std::vector<float> goldColor = { 1.0f, 0.8431f, 0.0f }; // RGB for gold
 std::vector<float> whiteColor = { 1.0f, 1.0f, 1.0f }; // RGB for white
-
+std::vector<float> subdivided_edges;
 void updateEdgeColors() {
-    for (size_t i = 0; i < edge_colors.size(); i += 3) {
-        float intensity = (std::sin(globalTime + float(i) * 0.1f) + 1.0f) * 0.5f;
-
-        edge_colors[i] = goldColor[0] * (1.0f - intensity) + whiteColor[0] * intensity; // R
-        edge_colors[i + 1] = goldColor[1] * (1.0f - intensity) + whiteColor[1] * intensity; // G
-        edge_colors[i + 2] = goldColor[2] * (1.0f - intensity) + whiteColor[2] * intensity; // B
+    static bool ChangeColor = true;
+    edge_colors.clear();
+    for (size_t i = 0; i < subdivided_edges.size(); i += 3) {
+        if (ChangeColor) {
+            if (i % 5 == 0 || i % 5 == 2 || i % 5 == 4 ) {
+                edge_colors.push_back(1.0f); // R
+                edge_colors.push_back(1.0f); // G
+                edge_colors.push_back(1.0f); // B
+            }
+            else {
+                edge_colors.push_back(0.0f); // R
+                edge_colors.push_back(0.0f); // G
+                edge_colors.push_back(0.0f); // B
+            }
+        }
+        else {
+            if (i % 5 == 0 || i % 5 == 2 || i % 5 == 4 ) {
+                edge_colors.push_back(0.0f); // R
+                edge_colors.push_back(0.0f); // G
+                edge_colors.push_back(0.0f); // B
+            }
+            else {
+                edge_colors.push_back(1.0f); // R
+                edge_colors.push_back(1.0f); // G
+                edge_colors.push_back(1.0f); // B
+            }
+        }
     }
-
+    ChangeColor = !ChangeColor;
     glBindBuffer(GL_ARRAY_BUFFER, edgeCBO);
     glBufferData(GL_ARRAY_BUFFER, edge_colors.size() * sizeof(float), &edge_colors[0], GL_STATIC_DRAW);
 }
@@ -308,13 +302,34 @@ int main() {
     }
     float time = 0;
 
+    
+    subdivided_edges.reserve(edges.size() * 4);
 
+    for (size_t i = 0; i < edges.size(); i += 6) {
+        float x1 = edges[i], y1 = edges[i + 1], z1 = edges[i + 2];
+        float x2 = edges[i + 3], y2 = edges[i + 4], z2 = edges[i + 5];
+
+        float dx = (x2 - x1) / 5.0f;
+        float dy = (y2 - y1) / 5.0f;
+        float dz = (z2 - z1) / 5.0f;
+
+        for (int j = 0; j < 5; ++j) {
+            subdivided_edges.push_back(x1 + dx * j);
+            subdivided_edges.push_back(y1 + dy * j);
+            subdivided_edges.push_back(z1 + dz * j);
+            subdivided_edges.push_back(x1 + dx * (j + 1));
+            subdivided_edges.push_back(y1 + dy * (j + 1));
+            subdivided_edges.push_back(z1 + dz * (j + 1));
+        }
+    }
 
     
-    for (size_t i = 0; i < edges.size() / 3; ++i) {
+    for (size_t i = 0; i < subdivided_edges.size() / 3; ++i) {
+        
         edge_colors.push_back(1.0f); // R
         edge_colors.push_back(1.0f); // G
         edge_colors.push_back(1.0f); // B
+        
     }
 
 
@@ -403,7 +418,7 @@ int main() {
 
     // Load edge vertices
     glBindBuffer(GL_ARRAY_BUFFER, edgeVBO);
-    glBufferData(GL_ARRAY_BUFFER, edges.size() * sizeof(float), &edges[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, subdivided_edges.size() * sizeof(float), &subdivided_edges[0], GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
@@ -462,9 +477,8 @@ int main() {
     float pointSize = 1.0f;
     bool increasing = true;
     
-
+    float timeThreshold = 0.5f;
     while (!glfwWindowShouldClose(window)) {
-        globalTime += 0.01f;
         glClearColor(0.8f, 0.8f, 0.8f, 1.0f);  // 设置背景颜色为淡灰色
         glClear(GL_COLOR_BUFFER_BIT);
         if (isTransitioning) {
@@ -497,7 +511,14 @@ int main() {
         glDrawArrays(GL_TRIANGLES, 0, triangles.size() / 3);
 
         if (showEdges) {
-            updateEdgeColors();
+            if (updateEdgeColor) {
+                if (globalTime > timeThreshold) {
+                    updateEdgeColors();
+                    globalTime = 0;
+                }
+                globalTime += 0.02f;
+            }
+                
             time += 0.02f;  // 更新时间
             for (int i = 0; i < 9; i++) {
                 radii[i] = initialRadii[i] * std::max(0.0f, std::sin(time - i * 0.3f));  // 使用正弦函数更新半径，您可以按需更改此函数
@@ -519,7 +540,7 @@ int main() {
             glBindBuffer(GL_ARRAY_BUFFER, circleVBO);
             glBufferData(GL_ARRAY_BUFFER, circleVertices.size() * sizeof(float), &circleVertices[0], GL_STATIC_DRAW);
             glBindVertexArray(edgeVAO);
-            glDrawArrays(GL_LINES, 0, edges.size() / 3);
+            glDrawArrays(GL_LINES, 0, subdivided_edges.size() / 3);
             glBindVertexArray(circleVAO);
             glDrawArrays(GL_TRIANGLES, 0, 3 * num_segments * (points.size() / 3));
         }
