@@ -1,0 +1,15 @@
+﻿  demo.cpp
+E:\AGrade3\CG\CG\hw1\demo\demo.cpp(268,21): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+E:\AGrade3\CG\CG\hw1\demo\demo.cpp(283,44): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+E:\AGrade3\CG\CG\hw1\demo\demo.cpp(465,75): warning C4267: “参数”: 从“size_t”转换到“int”，可能丢失数据
+E:\AGrade3\CG\CG\hw1\demo\demo.cpp(511,56): warning C4267: “参数”: 从“size_t”转换到“GLsizei”，可能丢失数据
+E:\AGrade3\CG\CG\hw1\demo\demo.cpp(543,63): warning C4267: “参数”: 从“size_t”转换到“GLsizei”，可能丢失数据
+E:\AGrade3\CG\CG\hw1\demo\demo.cpp(545,60): warning C4267: “参数”: 从“size_t”转换到“GLsizei”，可能丢失数据
+E:\AGrade3\CG\CG\hw1\demo\demo.cpp(340,36): warning C4101: “pointVBO”: 未引用的局部变量
+E:\AGrade3\CG\CG\hw1\demo\demo.cpp(340,46): warning C4101: “pointVAO”: 未引用的局部变量
+  util.cpp
+  正在生成代码
+  Previous IPDB not found, fall back to full compilation.
+  All 281 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  已完成代码的生成
+  demo.vcxproj -> E:\AGrade3\CG\CG\hw1\x64\Release\CG_hw_1.exe
